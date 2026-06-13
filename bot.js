@@ -14,7 +14,7 @@ const client = new Client({
 });
 
 const PREFIX = "%";
-const TOKEN = "BOT_TOKEN";
+const TOKEN = process.env.TOKEN;
 
 const timeoutDurations = {
     "1m": 60 * 1000,
