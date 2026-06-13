@@ -179,20 +179,3 @@ client.on("messageCreate", async (message) => {
         }
     }
 });
-
-client.login(TOKEN);
-{
-  "name": "discord-ban-timeout-kick-bot",
-  "version": "1.0.0",
-  "description": "",
-  "main": "bot.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "discord.js": "^14.26.4"
-  }
-}
