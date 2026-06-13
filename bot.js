@@ -24,9 +24,13 @@ const client = new Client({
 const PREFIX = "%";
 const TOKEN = process.env.TOKEN;
 
-// 🔥 SAFE TOKEN CHECK (important)
+// 🔴 CAUSE #2 DEBUG CHECK (IMPORTANT)
+console.log("🔑 TOKEN exists:", !!TOKEN);
+console.log("🔑 TOKEN preview:", TOKEN ? TOKEN.slice(0, 10) + "..." : "MISSING");
+
+// 🔴 HARD STOP IF TOKEN IS MISSING
 if (!TOKEN) {
-    console.error("❌ TOKEN is missing in Railway variables");
+    console.error("❌ TOKEN is missing in Railway variables!");
     process.exit(1);
 }
 
