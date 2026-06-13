@@ -13,6 +13,9 @@ const client = new Client({
     ]
 });
 
+// 🔥 DEBUG: check if Railway is loading the token
+console.log("TOKEN loaded?", !!process.env.TOKEN);
+
 const PREFIX = "%";
 const TOKEN = process.env.TOKEN;
 
@@ -179,3 +182,5 @@ client.on("messageCreate", async (message) => {
         }
     }
 });
+
+client.login(TOKEN);
