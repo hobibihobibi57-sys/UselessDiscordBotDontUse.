@@ -1,3 +1,11 @@
+process.on("uncaughtException", (err) => {
+    console.error("🔥 Uncaught Exception:", err);
+});
+
+process.on("unhandledRejection", (err) => {
+    console.error("🔥 Unhandled Rejection:", err);
+});
+
 const {
     Client,
     GatewayIntentBits,
@@ -13,11 +21,14 @@ const client = new Client({
     ]
 });
 
-// 🔥 DEBUG: check if Railway is loading the token
-console.log("TOKEN loaded?", !!process.env.TOKEN);
-
 const PREFIX = "%";
 const TOKEN = process.env.TOKEN;
+
+// 🔥 SAFE TOKEN CHECK (important)
+if (!TOKEN) {
+    console.error("❌ TOKEN is missing in Railway variables");
+    process.exit(1);
+}
 
 const timeoutDurations = {
     "1m": 60 * 1000,
@@ -39,7 +50,7 @@ const timeoutDurations = {
 };
 
 client.once("ready", () => {
-    console.log(`${client.user.tag} is online!`);
+    console.log(`✅ ${client.user.tag} is online!`);
 });
 
 client.on("messageCreate", async (message) => {
