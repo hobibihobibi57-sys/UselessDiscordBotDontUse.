@@ -72,25 +72,6 @@ client.on("messageCreate", async (message) => {
     // ================= ECONOMY =================
     if (economy.handleCommand(message, command, args)) return;
 
-    // ================= HELP =================
-    if (command === "help") {
-        return message.reply(
-`🐮 **Capo mucca Help**
-
-%ban @user - banna un utente
-%kick @user - espelle un utente
-%timeout @user 1m|1h|1d|1w - timeout
-%untimeout @user - toglie il timeout
-%purge after <message id> - cancella tutti i messaggi dopo quel messaggio
-%funfact - mostra un fatto casuale
-%work - guadagna Moo Coins
-%gamble <amount> - scommetti coins
-%leaderboard - classifica coins
-
-🐮`
-        );
-    }
-
     // ================= FUNFACT =================
     if (command === "funfact") {
         return message.reply(getFunFact());
@@ -157,7 +138,6 @@ client.on("messageCreate", async (message) => {
             return message.reply("Errore nel timeout.");
         }
     }
-});
 
     // ================= UNTIMEOUT =================
     if (command === "untimeout") {
@@ -183,6 +163,8 @@ client.on("messageCreate", async (message) => {
             return message.reply("Errore nell'untimeout.");
         }
     }
+
+}); // <-- IMPORTANT: closes messageCreate
 
 // ================= LOGIN =================
 client.login(TOKEN);
