@@ -15,6 +15,7 @@ const {
 // ================= MODULES =================
 const { getFunFact } = require("./funfact.js");
 const economy = require("./economy.js");
+const purge = require("./purge.js");
 
 const client = new Client({
     intents: [
