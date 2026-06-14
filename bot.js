@@ -73,6 +73,9 @@ client.on("messageCreate", async (message) => {
     // ================= ECONOMY =================
     if (economy.handleCommand(message, command, args)) return;
 
+    // ================= PURGE =================
+if (await purge.handleCommand(message, command, args)) return;
+
         // ================= HELP =================
     if (command === "help") {
         return message.reply(
