@@ -24,38 +24,76 @@ const client = new Client({
 const PREFIX = "%";
 const TOKEN = process.env.TOKEN;
 
-// 🔴 CAUSE #2 DEBUG CHECK (IMPORTANT)
-console.log("🔑 TOKEN exists:", !!TOKEN);
-console.log("🔑 TOKEN preview:", TOKEN ? TOKEN.slice(0, 10) + "..." : "MISSING");
+// ================= MAX TIMEOUT =================
+const MAX_TIMEOUT_MS = 365 * 24 * 60 * 60 * 1000; // 1 year
 
-// 🔴 HARD STOP IF TOKEN IS MISSING
-if (!TOKEN) {
-    console.error("❌ TOKEN is missing in Railway variables!");
-    process.exit(1);
-}
+// ================= FUN FACTS =================
 
-const timeoutDurations = {
-    "1m": 60 * 1000,
-    "5m": 5 * 60 * 1000,
-    "10m": 10 * 60 * 1000,
-    "30m": 30 * 60 * 1000,
+const funFacts = [
+    { text: "Le mucche sono animali erbivori.", rarity: "Comune" },
+    { text: "Il manzo è una delle carni più consumate al mondo.", rarity: "Comune" },
+    { text: "Le mucche hanno quattro stomaci.", rarity: "Comune" },
+    { text: "Le mucche muggiscono per comunicare.", rarity: "Comune" },
+    { text: "Il manzo può essere cucinato in molti modi.", rarity: "Comune" },
+    { text: "Le mucche vivono in gruppi sociali.", rarity: "Comune" },
+    { text: "Il latte proviene dalle mucche.", rarity: "Comune" },
+    { text: "Le mucche pascolano nei campi.", rarity: "Comune" },
+    { text: "Il manzo contiene proteine.", rarity: "Comune" },
+    { text: "Le mucche sono animali tranquilli.", rarity: "Comune" },
 
-    "1h": 60 * 60 * 1000,
-    "2h": 2 * 60 * 60 * 1000,
-    "5h": 5 * 60 * 60 * 1000,
-    "10h": 10 * 60 * 60 * 1000,
+    { text: "Le mucche hanno amici preferiti.", rarity: "Non comune" },
+    { text: "Il manzo Wagyu è molto pregiato.", rarity: "Non comune" },
+    { text: "Le mucche riconoscono i volti umani.", rarity: "Non comune" },
+    { text: "Le mucche comunicano con il linguaggio del corpo.", rarity: "Non comune" },
+    { text: "Il manzo può essere affumicato.", rarity: "Non comune" },
 
-    "1d": 24 * 60 * 60 * 1000,
-    "3d": 3 * 24 * 60 * 60 * 1000,
-    "5d": 5 * 24 * 60 * 60 * 1000,
+    { text: "Le mucche possono sognare.", rarity: "Rara" },
+    { text: "Ogni mucca ha un naso unico.", rarity: "Rara" },
+    { text: "Le mucche possono provare emozioni complesse.", rarity: "Rara" },
 
-    "1w": 7 * 24 * 60 * 60 * 1000,
-    "2w": 14 * 24 * 60 * 60 * 1000
-};
+    { text: "Il latte è stato una delle prime risorse domesticate dall’uomo.", rarity: "Leggendaria" },
+    { text: "Le mucche sono fondamentali nella storia dell’agricoltura.", rarity: "Leggendaria" }
+];
+
+// ================= BOT =================
 
 client.once("ready", () => {
     console.log(`✅ ${client.user.tag} is online!`);
 });
+
+// ================= TIME PARSER =================
+
+function parseDuration(input) {
+    const match = input.match(/^(\d+)([mhdw])$/);
+    if (!match) return null;
+
+    const value = parseInt(match[1]);
+    const unit = match[2];
+
+    const limits = { m: 59, h: 23, d: 6, w: 52 };
+
+    if (value < 1 || value > limits[unit]) return null;
+
+    let ms = 0;
+
+    if (unit === "m") ms = value * 60 * 1000;
+    if (unit === "h") ms = value * 60 * 60 * 1000;
+    if (unit === "d") ms = value * 24 * 60 * 60 * 1000;
+    if (unit === "w") ms = value * 7 * 24 * 60 * 60 * 1000;
+
+    if (ms > MAX_TIMEOUT_MS) return MAX_TIMEOUT_MS;
+
+    return ms;
+}
+
+// ================= FUN FACT =================
+
+function getFunFact() {
+    const fact = funFacts[Math.floor(Math.random() * funFacts.length)];
+    return `😮 Piccolo fun fact: ${fact.text}\n⭐ Rarità: ${fact.rarity} 🐮`;
+}
+
+// ================= COMMANDS =================
 
 client.on("messageCreate", async (message) => {
     if (message.author.bot) return;
@@ -65,135 +103,88 @@ client.on("messageCreate", async (message) => {
     const args = message.content.slice(PREFIX.length).trim().split(/\s+/);
     const command = args.shift().toLowerCase();
 
+    // HELP
+    if (command === "help") {
+        return message.reply(
+`🐮 **Moo Bot Help**
+
+%ban @user - banna un utente
+%kick @user - espelle un utente
+%timeout @user (1m, 1h, 1d, 1w, MAX) - timeout con durata
+%funfact - mostra un fatto casuale
+
+🐮`
+        );
+    }
+
+    // FUNFACT
+    if (command === "funfact") {
+        return message.reply(`🐮 **Fun Fact:**\n\n${getFunFact()}`);
+    }
+
     // BAN
     if (command === "ban") {
         if (!message.member.permissions.has(PermissionsBitField.Flags.BanMembers))
-            return message.reply("You don't have permission to ban members.");
+            return message.reply("Non hai permessi.");
 
         const target = args[0];
-        if (!target)
-            return message.reply("Usage: %ban @user or USER_ID");
+        if (!target) return message.reply("Uso: %ban @user");
+
+        const userId = target.replace(/[<@!>]/g, "");
 
         try {
-            const userId = target.replace(/[<@!>]/g, "");
+            const member = await message.guild.members.fetch(userId);
+            await message.guild.members.ban(userId);
 
-            await message.guild.members.ban(userId, {
-                reason: `Banned by ${message.author.tag}`
-            });
-
-            return message.reply(`User ${userId} has been banned.`);
+            return message.reply(`❗Moo! Ho bannato ${member.user.tag} Dal Server!❗\n\n${getFunFact()}`);
         } catch (err) {
             console.error(err);
-            return message.reply("Failed to ban that user.");
-        }
-    }
-
-    // UNBAN
-    if (command === "unban") {
-        if (!message.member.permissions.has(PermissionsBitField.Flags.BanMembers))
-            return message.reply("You don't have permission to unban members.");
-
-        const target = args[0];
-        if (!target)
-            return message.reply("Usage: %unban USER_ID");
-
-        try {
-            const userId = target.replace(/[<@!>]/g, "");
-
-            await message.guild.members.unban(
-                userId,
-                `Unbanned by ${message.author.tag}`
-            );
-
-            return message.reply(`User ${userId} has been unbanned.`);
-        } catch (err) {
-            console.error(err);
-            return message.reply("Failed to unban that user.");
+            return message.reply("Errore.");
         }
     }
 
     // KICK
     if (command === "kick") {
         if (!message.member.permissions.has(PermissionsBitField.Flags.KickMembers))
-            return message.reply("You don't have permission to kick members.");
+            return message.reply("Non hai permessi.");
 
         const target = args[0];
-        if (!target)
-            return message.reply("Usage: %kick @user or USER_ID");
+        if (!target) return message.reply("Uso: %kick @user");
+
+        const userId = target.replace(/[<@!>]/g, "");
 
         try {
-            const userId = target.replace(/[<@!>]/g, "");
             const member = await message.guild.members.fetch(userId);
+            await member.kick();
 
-            await member.kick(`Kicked by ${message.author.tag}`);
-
-            return message.reply(`${member.user.tag} has been kicked.`);
+            return message.reply(`❗Moo! Ho espulso ${member.user.tag} Dal Server!❗\n\n${getFunFact()}`);
         } catch (err) {
             console.error(err);
-            return message.reply("Failed to kick that user.");
+            return message.reply("Errore.");
         }
     }
 
     // TIMEOUT
     if (command === "timeout") {
         if (!message.member.permissions.has(PermissionsBitField.Flags.ModerateMembers))
-            return message.reply("You don't have permission to timeout members.");
+            return message.reply("Non hai permessi.");
 
         const target = args[0];
         const duration = args[1];
 
-        if (!target)
-            return message.reply("Usage: %timeout @user TIME");
+        const ms = parseDuration(duration);
+        if (!ms) return message.reply("Durata non valida.");
 
-        if (!duration || !timeoutDurations[duration]) {
-            return message.reply(
-                "Allowed times: 1m, 5m, 10m, 30m, 1h, 2h, 5h, 10h, 1d, 3d, 5d, 1w, 2w"
-            );
-        }
+        const userId = target.replace(/[<@!>]/g, "");
 
         try {
-            const userId = target.replace(/[<@!>]/g, "");
             const member = await message.guild.members.fetch(userId);
+            await member.timeout(ms);
 
-            await member.timeout(
-                timeoutDurations[duration],
-                `Timed out by ${message.author.tag}`
-            );
-
-            return message.reply(
-                `${member.user.tag} has been timed out for ${duration}.`
-            );
+            return message.reply(`❗Moo! Ho messo in timeout ${member.user.tag} Dal Server!❗\n\n${getFunFact()}`);
         } catch (err) {
             console.error(err);
-            return message.reply("Failed to timeout that user.");
-        }
-    }
-
-    // UNTIMEOUT
-    if (command === "untimeout") {
-        if (!message.member.permissions.has(PermissionsBitField.Flags.ModerateMembers))
-            return message.reply("You don't have permission to remove timeouts.");
-
-        const target = args[0];
-
-        if (!target)
-            return message.reply("Usage: %untimeout @user or USER_ID");
-
-        try {
-            const userId = target.replace(/[<@!>]/g, "");
-            const member = await message.guild.members.fetch(userId);
-
-            await member.timeout(
-                null,
-                `Timeout removed by ${message.author.tag}`
-            );
-
-            return message.reply(
-                `${member.user.tag}'s timeout has been removed.`
-            );
-        } catch (err) {
-            console.error(err);
-            return message.reply("Failed to remove the timeout.");
+            return message.reply("Errore.");
         }
     }
 });
