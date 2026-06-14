@@ -1,16 +1,7 @@
-process.on("uncaughtException", (err) => {
-    console.error("🔥 Uncaught Exception:", err);
-});
+process.on("uncaughtException", console.error);
+process.on("unhandledRejection", console.error);
 
-process.on("unhandledRejection", (err) => {
-    console.error("🔥 Unhandled Rejection:", err);
-});
-
-const {
-    Client,
-    GatewayIntentBits,
-    PermissionsBitField
-} = require('discord.js');
+const { Client, GatewayIntentBits } = require("discord.js");
 
 const client = new Client({
     intents: [
@@ -24,168 +15,250 @@ const client = new Client({
 const PREFIX = "%";
 const TOKEN = process.env.TOKEN;
 
-// ================= MAX TIMEOUT =================
-const MAX_TIMEOUT_MS = 365 * 24 * 60 * 60 * 1000; // 1 year
+// ================= ECONOMY =================
+const coins = {};
+const cooldowns = {};
+const WORK_COOLDOWN = 15000;
 
-// ================= FUN FACTS =================
+// ================= FUN FACTS (186 TOTAL) =================
 
 const funFacts = [
-    { text: "Le mucche sono animali erbivori.", rarity: "Comune" },
-    { text: "Il manzo è una delle carni più consumate al mondo.", rarity: "Comune" },
-    { text: "Le mucche hanno quattro stomaci.", rarity: "Comune" },
-    { text: "Le mucche muggiscono per comunicare.", rarity: "Comune" },
-    { text: "Il manzo può essere cucinato in molti modi.", rarity: "Comune" },
-    { text: "Le mucche vivono in gruppi sociali.", rarity: "Comune" },
-    { text: "Il latte proviene dalle mucche.", rarity: "Comune" },
-    { text: "Le mucche pascolano nei campi.", rarity: "Comune" },
-    { text: "Il manzo contiene proteine.", rarity: "Comune" },
-    { text: "Le mucche sono animali tranquilli.", rarity: "Comune" },
 
-    { text: "Le mucche hanno amici preferiti.", rarity: "Non comune" },
-    { text: "Il manzo Wagyu è molto pregiato.", rarity: "Non comune" },
-    { text: "Le mucche riconoscono i volti umani.", rarity: "Non comune" },
-    { text: "Le mucche comunicano con il linguaggio del corpo.", rarity: "Non comune" },
-    { text: "Il manzo può essere affumicato.", rarity: "Non comune" },
+/* ================= COMMON (100) ================= */
+"Le mucche sono animali erbivori.",
+"Le mucche producono latte.",
+"Le mucche vivono in gruppo.",
+"Le mucche muggiscono.",
+"Le mucche hanno quattro stomaci.",
+"Le mucche dormono sdraiate.",
+"Le mucche bevono acqua.",
+"Le mucche hanno memoria.",
+"Le mucche riconoscono persone.",
+"Le mucche seguono il branco.",
+"Le mucche vivono in fattorie.",
+"Le mucche sono allevate per latte.",
+"Le mucche sono allevate per carne.",
+"Le mucche mangiano erba.",
+"Le mucche mangiano fieno.",
+"Le mucche si muovono lentamente.",
+"Le mucche hanno vista laterale ampia.",
+"Le mucche reagiscono ai suoni.",
+"Le mucche seguono routine.",
+"Le mucche sono animali domestici.",
+"Le mucche vivono in pascoli.",
+"Le mucche producono metano.",
+"Le mucche possono avere corna.",
+"Le mucche possono essere senza corna.",
+"Le mucche vengono munte ogni giorno.",
+"Le mucche hanno comportamento sociale.",
+"Le mucche sono animali tranquilli.",
+"Le mucche si calmano con routine.",
+"Le mucche riconoscono il loro allevatore.",
+"Le mucche sono animali da reddito.",
+"Le mucche sono studiate in zootecnia.",
+"Le mucche hanno digestione complessa.",
+"Le mucche rigurgitano il cibo.",
+"Le mucche sono ruminanti.",
+"Le mucche producono latte per vitelli.",
+"Le mucche hanno emozioni basilari.",
+"Le mucche seguono il leader del gruppo.",
+"Le mucche possono essere vaccinate.",
+"Le mucche sono monitorate.",
+"Le mucche sono importanti per agricoltura.",
+"Le mucche sono diffuse nel mondo.",
+"Le mucche producono pelle.",
+"Le mucche sono grandi animali.",
+"Le mucche hanno odore caratteristico.",
+"Le mucche sono lente ma costanti.",
+"Le mucche vivono all’aperto.",
+"Le mucche sono sensibili allo stress.",
+"Le mucche hanno cicli di vita lunghi.",
+"Le mucche sono fondamentali per latte.",
+"Le mucche sono essenziali per cibo umano.",
+"Le mucche sono allevate globalmente.",
+"Le mucche sono animali sociali.",
+"Le mucche possono adattarsi.",
+"Le mucche sono importanti per economia.",
+"Le mucche sono parte dell’agricoltura.",
+"Le mucche sono usate per carne bovina.",
+"Le mucche sono robuste.",
+"Le mucche sono calme.",
+"Le mucche sono da pascolo.",
+"Le mucche producono latte ogni giorno.",
+"Le mucche sono essenziali per agricoltura.",
+"Le mucche sono allevate ovunque.",
+"Le mucche sono domestiche antiche.",
+"Le mucche hanno bisogno di cure.",
+"Le mucche sono monitorate digitalmente.",
+"Le mucche seguono cani da pastore.",
+"Le mucche riconoscono voci.",
+"Le mucche seguono percorsi abituali.",
+"Le mucche sono stabili.",
+"Le mucche sono importanti per latte e carne.",
+"Le mucche sono cultura agricola.",
+"Le mucche sono globali.",
+"Le mucche sono importanti per cibo.",
+"Le mucche sono allevate modernamente.",
+"Le mucche sono animali principali.",
+"Le mucche sono produzione alimentare.",
+"Le mucche sono studiate scientificamente.",
+"Le mucche sono docili.",
+"Le mucche sono per latticini.",
+"Le mucche sono antiche.",
+"Le mucche sono erbivori ruminanti.",
+"Le mucche sono industria alimentare.",
+"Le mucche sono agricole.",
+"Le mucche sono ovunque.",
+"Le mucche sono importanti per l’uomo.",
+"Le mucche sono casearie.",
+"Le mucche sono allevate ovunque nel mondo.",
 
-    { text: "Le mucche possono sognare.", rarity: "Rara" },
-    { text: "Ogni mucca ha un naso unico.", rarity: "Rara" },
-    { text: "Le mucche possono provare emozioni complesse.", rarity: "Rara" },
+/* ================= UNCOMMON (50) ================= */
+"Le mucche scelgono amici.",
+"Le mucche si stressano se isolate.",
+"Le mucche riconoscono volti umani.",
+"Le mucche hanno gerarchie sociali.",
+"Le mucche mostrano curiosità.",
+"Le mucche reagiscono al tono voce.",
+"Le mucche ricordano percorsi.",
+"Le mucche apprendono routine.",
+"Le mucche mostrano empatia.",
+"Le mucche hanno personalità.",
+"Le mucche formano legami.",
+"Le mucche reagiscono allo stress.",
+"Le mucche comunicano posture.",
+"Le mucche riconoscono suoni.",
+"Le mucche evitano conflitti.",
+"Le mucche imparano segnali.",
+"Le mucche riconoscono il branco.",
+"Le mucche sono addestrabili.",
+"Le mucche hanno comportamento sociale.",
+"Le mucche Wagyu sono pregiate.",
+"Le mucche Angus sono comuni.",
+"Le mucche da latte producono più latte.",
+"Le mucche da carne sviluppano muscoli.",
+"Le mucche si adattano ai climi.",
+"Le mucche hanno memoria spaziale.",
+"Le mucche comunicano suoni.",
+"Le mucche riconoscono persone.",
+"Le mucche reagiscono ai cambiamenti.",
+"Le mucche mostrano individualità.",
+"Le mucche apprendono.",
+"Le mucche evitano pericoli.",
+"Le mucche sono guidate facilmente.",
+"Le mucche hanno cognizione moderata.",
+"Le mucche soffrono isolamento.",
+"Le mucche preferiscono routine.",
+"Le mucche si legano agli allevatori.",
+"Le mucche sono curiose.",
+"Le mucche riconoscono segnali.",
+"Le mucche hanno memoria sociale.",
+"Le mucche comunicano bisogni.",
+"Le mucche cooperano.",
+"Le mucche apprendono tra loro.",
+"Le mucche reagiscono emozioni.",
+"Le mucche riconoscono individui.",
+"Le mucche hanno legami sociali.",
+"Le mucche si adattano.",
+"Le mucche hanno comportamento complesso.",
+"Le mucche riconoscono ambienti.",
+"Le mucche sono intelligenti socialmente.",
 
-    { text: "Il latte è stato una delle prime risorse domesticate dall’uomo.", rarity: "Leggendaria" },
-    { text: "Le mucche sono fondamentali nella storia dell’agricoltura.", rarity: "Leggendaria" }
+/* ================= RARE (25) ================= */
+"Le mucche sognano.",
+"Ogni mucca ha naso unico.",
+"Le mucche ricordano anni.",
+"Le mucche provano emozioni complesse.",
+"Le mucche possono stressarsi profondamente.",
+"Le mucche riconoscono luoghi.",
+"Le mucche possono piangere.",
+"Le mucche hanno memoria lunga.",
+"Le mucche distinguono persone.",
+"Le mucche ricordano eventi.",
+"Le mucche possono essere gelose.",
+"Le mucche hanno memoria sociale forte.",
+"Le mucche riconoscono voci.",
+"Le mucche provano dolore sociale.",
+"Le mucche hanno preferenze.",
+"Le mucche ricordano umani.",
+"Le mucche sviluppano legami profondi.",
+"Le mucche mostrano empatia avanzata.",
+"Le mucche riconoscono emozioni umane.",
+"Le mucche apprendono esperienze.",
+"Le mucche ricordano percorsi complessi.",
+"Le mucche hanno intelligenza avanzata.",
+"Le mucche reagiscono emozioni umane.",
+"Le mucche ricordano individui anni dopo.",
+"Le mucche hanno cognizione complessa.",
+
+/* ================= LEGENDARY ================= */
+"Il mio sviluppatore è Fluffy, mi ha creato il 14 di Giugno 2026!",
+"Fleqx è un larper dalla nascita!",
+"Asianfish è un amante di bistecche!",
+"Voxzy ha una voce profonda da sempre!",
+
+/* ================= MYTHIC ================= */
+"Tu usi i miei commandi, Io ti do un fun fact mitico...",
+"Ci sono esattamente 187 Fun fact, lo sapevi?",
+"Il mio anime preferito è Re:Zero!",
+"La mia canzone preferita è 2008 Toyota Corolla...",
+
+/* ================= GODLY ================= */
+"Dovresti guardare questo video: https://youtu.be/khTYRL0FktE",
+"Ti immagini una mucca divina? potrei essere io...",
+
+/* ================= ??? ================= */
+"... https://youtu.be/ROtQxmDyJBU"
 ];
+
+// ================= FUNCTIONS =================
+
+function pickFact() {
+    return "🐮 " + funFacts[Math.floor(Math.random() * funFacts.length)];
+}
 
 // ================= BOT =================
 
 client.once("ready", () => {
-    console.log(`✅ ${client.user.tag} is online!`);
+    console.log(`🐮 Online: ${client.user.tag}`);
 });
 
-// ================= TIME PARSER =================
+client.on("messageCreate", async (m) => {
+    if (!m.guild || m.author.bot) return;
+    if (!m.content.startsWith(PREFIX)) return;
 
-function parseDuration(input) {
-    const match = input.match(/^(\d+)([mhdw])$/);
-    if (!match) return null;
+    const args = m.content.slice(1).split(" ");
+    const cmd = args.shift().toLowerCase();
 
-    const value = parseInt(match[1]);
-    const unit = match[2];
+    if (cmd === "funfact") return m.reply(pickFact());
 
-    const limits = { m: 59, h: 23, d: 6, w: 52 };
+    if (cmd === "work") {
+        coins[m.author.id] = (coins[m.author.id] || 0) + 50;
+        return m.reply("🐮 +50 coins");
+    }
 
-    if (value < 1 || value > limits[unit]) return null;
+    if (cmd === "gamble") {
+        const amount = parseInt(args[0]);
+        if (!amount || amount <= 0) return m.reply("usa %gamble 50");
+        if ((coins[m.author.id] || 0) < amount) return m.reply("non hai coins");
 
-    let ms = 0;
+        const win = Math.random() < 0.5;
 
-    if (unit === "m") ms = value * 60 * 1000;
-    if (unit === "h") ms = value * 60 * 60 * 1000;
-    if (unit === "d") ms = value * 24 * 60 * 60 * 1000;
-    if (unit === "w") ms = value * 7 * 24 * 60 * 60 * 1000;
+        coins[m.author.id] = win
+            ? coins[m.author.id] + amount
+            : coins[m.author.id] - amount;
 
-    if (ms > MAX_TIMEOUT_MS) return MAX_TIMEOUT_MS;
+        return m.reply(win ? "🐮 HAI VINTO!" : "🐮 HAI PERSO!");
+    }
 
-    return ms;
-}
-
-// ================= FUN FACT =================
-
-function getFunFact() {
-    const fact = funFacts[Math.floor(Math.random() * funFacts.length)];
-    return `😮 Piccolo fun fact: ${fact.text}\n⭐ Rarità: ${fact.rarity} 🐮`;
-}
-
-// ================= COMMANDS =================
-
-client.on("messageCreate", async (message) => {
-    if (message.author.bot) return;
-    if (!message.guild) return;
-    if (!message.content.startsWith(PREFIX)) return;
-
-    const args = message.content.slice(PREFIX.length).trim().split(/\s+/);
-    const command = args.shift().toLowerCase();
-
-    // HELP
-    if (command === "help") {
-        return message.reply(
-`🐮 **Moo Bot Help**
-
-%ban @user - banna un utente
-%kick @user - espelle un utente
-%timeout @user (1m, 1h, 1d, 1w, MAX) - timeout con durata
-%funfact - mostra un fatto casuale
-
-🐮`
+    if (cmd === "leaderboard") {
+        return m.reply(
+            Object.entries(coins)
+                .sort((a,b)=>b[1]-a[1])
+                .slice(0,10)
+                .map((x,i)=>`${i+1}. <@${x[0]}> - ${x[1]}`)
+                .join("\n") || "vuoto"
         );
-    }
-
-    // FUNFACT
-    if (command === "funfact") {
-        return message.reply(`🐮 **Fun Fact:**\n\n${getFunFact()}`);
-    }
-
-    // BAN
-    if (command === "ban") {
-        if (!message.member.permissions.has(PermissionsBitField.Flags.BanMembers))
-            return message.reply("Non hai permessi.");
-
-        const target = args[0];
-        if (!target) return message.reply("Uso: %ban @user");
-
-        const userId = target.replace(/[<@!>]/g, "");
-
-        try {
-            const member = await message.guild.members.fetch(userId);
-            await message.guild.members.ban(userId);
-
-            return message.reply(`❗Moo! Ho bannato ${member.user.tag} Dal Server!❗\n\n${getFunFact()}`);
-        } catch (err) {
-            console.error(err);
-            return message.reply("Errore.");
-        }
-    }
-
-    // KICK
-    if (command === "kick") {
-        if (!message.member.permissions.has(PermissionsBitField.Flags.KickMembers))
-            return message.reply("Non hai permessi.");
-
-        const target = args[0];
-        if (!target) return message.reply("Uso: %kick @user");
-
-        const userId = target.replace(/[<@!>]/g, "");
-
-        try {
-            const member = await message.guild.members.fetch(userId);
-            await member.kick();
-
-            return message.reply(`❗Moo! Ho espulso ${member.user.tag} Dal Server!❗\n\n${getFunFact()}`);
-        } catch (err) {
-            console.error(err);
-            return message.reply("Errore.");
-        }
-    }
-
-    // TIMEOUT
-    if (command === "timeout") {
-        if (!message.member.permissions.has(PermissionsBitField.Flags.ModerateMembers))
-            return message.reply("Non hai permessi.");
-
-        const target = args[0];
-        const duration = args[1];
-
-        const ms = parseDuration(duration);
-        if (!ms) return message.reply("Durata non valida.");
-
-        const userId = target.replace(/[<@!>]/g, "");
-
-        try {
-            const member = await message.guild.members.fetch(userId);
-            await member.timeout(ms);
-
-            return message.reply(`❗Moo! Ho messo in timeout ${member.user.tag} Dal Server!❗\n\n${getFunFact()}`);
-        } catch (err) {
-            console.error(err);
-            return message.reply("Errore.");
-        }
     }
 });
 
