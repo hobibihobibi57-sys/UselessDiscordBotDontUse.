@@ -75,11 +75,13 @@ client.on("messageCreate", async (message) => {
     // ================= HELP =================
     if (command === "help") {
         return message.reply(
-`🐮 **Moo Bot Help**
+`🐮 **Capo mucca Help**
 
 %ban @user - banna un utente
 %kick @user - espelle un utente
 %timeout @user 1m|1h|1d|1w - timeout
+%untimeout @user - toglie il timeout
+%purge after <message id> - cancella tutti i messaggi dopo quel messaggio
 %funfact - mostra un fatto casuale
 %work - guadagna Moo Coins
 %gamble <amount> - scommetti coins
@@ -156,6 +158,31 @@ client.on("messageCreate", async (message) => {
         }
     }
 });
+
+    // ================= UNTIMEOUT =================
+    if (command === "untimeout") {
+        if (!message.member.permissions.has(PermissionsBitField.Flags.ModerateMembers))
+            return message.reply("❌ No permessi.");
+
+        const id = args[0]?.replace(/[<@!>]/g, "");
+
+        if (!id) {
+            return message.reply("Uso: %untimeout @user");
+        }
+
+        try {
+            const member = await message.guild.members.fetch(id);
+
+            await member.timeout(null);
+
+            return message.reply(
+                `❗ Moo! Ho rimosso il timeout da questa persona! moo!\n\n${getFunFact()}`
+            );
+        } catch (err) {
+            console.error(err);
+            return message.reply("Errore nell'untimeout.");
+        }
+    }
 
 // ================= LOGIN =================
 client.login(TOKEN);
