@@ -12,8 +12,9 @@ const {
     PermissionsBitField
 } = require("discord.js");
 
-// 🔥 IMPORT FUNFACT SYSTEM
+// ================= MODULES =================
 const { getFunFact } = require("./funfact.js");
+const economy = require("./economy.js");
 
 const client = new Client({
     intents: [
@@ -68,6 +69,9 @@ client.on("messageCreate", async (message) => {
     const args = message.content.slice(PREFIX.length).trim().split(/\s+/);
     const command = args.shift().toLowerCase();
 
+    // ================= ECONOMY =================
+    if (economy.handleCommand(message, command, args)) return;
+
     // ================= HELP =================
     if (command === "help") {
         return message.reply(
@@ -77,6 +81,9 @@ client.on("messageCreate", async (message) => {
 %kick @user - espelle un utente
 %timeout @user 1m|1h|1d|1w - timeout
 %funfact - mostra un fatto casuale
+%work - guadagna Moo Coins
+%gamble <amount> - scommetti coins
+%leaderboard - classifica coins
 
 🐮`
         );
