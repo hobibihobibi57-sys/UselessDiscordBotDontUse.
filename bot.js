@@ -1,7 +1,16 @@
-process.on("uncaughtException", console.error);
-process.on("unhandledRejection", console.error);
+process.on("uncaughtException", (err) => {
+    console.error("🔥 Uncaught Exception:", err);
+});
 
-const { Client, GatewayIntentBits, PermissionsBitField } = require("discord.js");
+process.on("unhandledRejection", (err) => {
+    console.error("🔥 Unhandled Rejection:", err);
+});
+
+const {
+    Client,
+    GatewayIntentBits,
+    PermissionsBitField
+} = require("discord.js");
 
 const client = new Client({
     intents: [
@@ -15,172 +24,216 @@ const client = new Client({
 const PREFIX = "%";
 const TOKEN = process.env.TOKEN;
 
-// ================= ECONOMY =================
-const coins = {};
-const gambleCooldown = {};
-const WORK_COOLDOWN = 15000;
-const GAMBLE_COOLDOWN = 15000;
+const MAX_TIMEOUT_MS = 365 * 24 * 60 * 60 * 1000;
 
-// ================= FUN FACTS (186 TOTAL) =================
-const funFacts = [
-/* COMMON (100) */
-"Le mucche sono animali erbivori.","Le mucche producono latte.","Le mucche vivono in gruppo.","Le mucche muggiscono.",
-"Le mucche hanno quattro stomaci.","Le mucche dormono sdraiate.","Le mucche bevono acqua.","Le mucche hanno memoria.",
-"Le mucche riconoscono persone.","Le mucche seguono il branco.","Le mucche vivono in fattorie.","Le mucche sono allevate per latte.",
-"Le mucche sono allevate per carne.","Le mucche mangiano erba.","Le mucche mangiano fieno.","Le mucche si muovono lentamente.",
-"Le mucche hanno vista laterale ampia.","Le mucche reagiscono ai suoni.","Le mucche seguono routine.","Le mucche sono animali domestici.",
-"Le mucche vivono in pascoli.","Le mucche producono metano.","Le mucche possono avere corna.","Le mucche vengono munte ogni giorno.",
-"Le mucche sono tranquille.","Le mucche riconoscono allevatori.","Le mucche sono da reddito.","Le mucche sono studiate in zootecnia.",
-"Le mucche rigurgitano il cibo.","Le mucche sono ruminanti.","Le mucche producono latte per vitelli.","Le mucche seguono il leader.",
-"Le mucche possono essere vaccinate.","Le mucche sono monitorate.","Le mucche sono importanti per agricoltura.",
-"Le mucche sono diffuse nel mondo.","Le mucche sono grandi animali.","Le mucche sono lente ma costanti.",
-"Le mucche vivono all’aperto.","Le mucche sono sensibili allo stress.","Le mucche hanno cicli di vita lunghi.",
-"Le mucche sono fondamentali per il latte.","Le mucche sono essenziali per il cibo umano.",
-"Le mucche sono allevate globalmente.","Le mucche sono sociali.","Le mucche sono importanti per economia.",
-"Le mucche sono robuste.","Le mucche sono calme.","Le mucche producono latte ogni giorno.",
-"Le mucche sono essenziali per agricoltura.","Le mucche sono animali agricoli.",
-"Le mucche sono presenti ovunque.","Le mucche sono importanti per l’uomo.",
-"Le mucche sono allevate per prodotti caseari.","Le mucche sono diffuse globalmente.",
+// ================= FUN FACTS =================
 
-/* UNCOMMON (50) */
-"Le mucche scelgono amici.","Le mucche si stressano se isolate.","Le mucche riconoscono volti umani.",
-"Le mucche hanno gerarchie sociali.","Le mucche mostrano curiosità.","Le mucche reagiscono alla voce.",
-"Le mucche ricordano percorsi.","Le mucche apprendono routine.","Le mucche mostrano empatia.",
-"Le mucche hanno personalità.","Le mucche formano legami.","Le mucche comunicano posture.",
-"Le mucche riconoscono suoni.","Le mucche evitano conflitti.","Le mucche cooperano.",
-"Le mucche hanno memoria sociale.","Le mucche si adattano.","Le mucche sono intelligenti socialmente.",
-"Le mucche Wagyu sono pregiate.","Le mucche Angus sono comuni.","Le mucche da latte producono più latte.",
-"Le mucche da carne sviluppano muscoli.","Le mucche apprendono.","Le mucche riconoscono segnali.",
-"Le mucche reagiscono allo stress.","Le mucche si legano agli allevatori.","Le mucche sono curiose.",
-"Le mucche riconoscono individui.","Le mucche comunicano bisogni.","Le mucche apprendono tra loro.",
-"Le mucche mostrano comportamento complesso.","Le mucche evitano pericoli.","Le mucche hanno memoria spaziale.",
-
-/* RARE (25) */
-"Le mucche sognano.","Ogni mucca ha naso unico.","Le mucche ricordano anni.",
-"Le mucche provano emozioni complesse.","Le mucche possono essere gelose.",
-"Le mucche riconoscono luoghi.","Le mucche piangono sotto stress.",
-"Le mucche hanno memoria lunga.","Le mucche distinguono persone.",
-"Le mucche ricordano eventi.","Le mucche hanno empatia avanzata.",
-"Le mucche riconoscono voci.","Le mucche hanno preferenze.",
-"Le mucche sviluppano legami profondi.","Le mucche hanno cognizione complessa.",
-"Le mucche ricordano percorsi complessi.","Le mucche reagiscono emozioni umane.",
-"Le mucche riconoscono emozioni umane.","Le mucche apprendono esperienze.",
-"Le mucche hanno intelligenza avanzata.","Le mucche ricordano individui per anni.",
-"Le mucche mostrano dolore sociale.","Le mucche hanno forte memoria sociale.",
-"Le mucche possono ricordare eventi passati per anni.",
-
-/* LEGENDARY */
-"Il mio sviluppatore è Fluffy, mi ha creato il 14 di Giugno 2026!",
-"Fleqx è un larper dalla nascita!",
-"Asianfish è un amante di bistecche!",
-"Voxzy ha una voce profonda da sempre!",
-
-/* MYTHIC */
-"Tu usi i miei commandi, Io ti do un fun fact mitico...",
-"Ci sono esattamente 187 Fun fact, lo sapevi?",
-"Il mio anime preferito è Re:Zero!",
-"La mia canzone preferita è 2008 Toyota Corolla...",
-
-/* GODLY */
-"Dovresti guardare questo video: https://youtu.be/khTYRL0FktE",
-"Ti immagini una mucca divina? potrei essere io...",
-
-/* ??? */
-"... https://youtu.be/ROtQxmDyJBU"
+const moderationFunFacts = [
+    "Le mucche sono animali erbivori.",
+    "Le mucche hanno quattro stomaci.",
+    "Le mucche producono latte ogni giorno.",
+    "Le mucche vivono in gruppi sociali.",
+    "Le mucche pascolano nei campi.",
+    "Le mucche bevono grandi quantità di acqua.",
+    "Le mucche muggiscono per comunicare.",
+    "Le mucche sono animali molto tranquilli.",
+    "Le mucche sono allevate in tutto il mondo.",
+    "Le mucche riconoscono persone familiari."
 ];
 
-// ================= PICK FACT =================
-function pickFact() {
-    const f = funFacts[Math.floor(Math.random() * funFacts.length)];
-    return `🐮 Fun fact:\n${f}, Moo! 🐮\n⭐ Rarità: Unknown ⭐`;
+function getModerationFact() {
+    const fact =
+        moderationFunFacts[
+            Math.floor(Math.random() * moderationFunFacts.length)
+        ];
+
+    return `🐮 Fun Fact:\n${fact}`;
 }
 
-// ================= BOT =================
+// ================= READY =================
+
 client.once("ready", () => {
-    console.log(`🐮 Online ${client.user.tag}`);
+    console.log(`✅ ${client.user.tag} is online!`);
 });
 
-client.on("messageCreate", async (m) => {
-    if (!m.guild || m.author.bot) return;
-    if (!m.content.startsWith(PREFIX)) return;
+// ================= TIME PARSER =================
 
-    const args = m.content.slice(1).trim().split(/\s+/);
-    const cmd = args.shift().toLowerCase();
+function parseDuration(input) {
+    const match = input.match(/^(\d+)([mhdw])$/);
 
-    // ================= FUNFACT =================
-    if (cmd === "funfact") return m.reply(pickFact());
+    if (!match) return null;
 
-    // ================= WORK =================
-    if (cmd === "work") {
-        coins[m.author.id] = (coins[m.author.id] || 0) + 50;
-        return m.reply("🐮 +50 coins!");
-    }
+    const value = parseInt(match[1]);
+    const unit = match[2];
 
-    // ================= GAMBLE =================
-    if (cmd === "gamble") {
-        const id = m.author.id;
-        const amount = parseInt(args[0]);
+    const limits = {
+        m: 59,
+        h: 23,
+        d: 6,
+        w: 52
+    };
 
-        if (!amount) return m.reply("usa %gamble 50");
+    if (value < 1 || value > limits[unit]) return null;
 
-        if (gambleCooldown[id] && Date.now() - gambleCooldown[id] < GAMBLE_COOLDOWN)
-            return m.reply("🐮 aspetta 15 secondi!");
+    let ms = 0;
 
-        gambleCooldown[id] = Date.now();
+    if (unit === "m") ms = value * 60 * 1000;
+    if (unit === "h") ms = value * 60 * 60 * 1000;
+    if (unit === "d") ms = value * 24 * 60 * 60 * 1000;
+    if (unit === "w") ms = value * 7 * 24 * 60 * 60 * 1000;
 
-        if ((coins[id] || 0) < amount)
-            return m.reply("non hai abbastanza coins");
+    return Math.min(ms, MAX_TIMEOUT_MS);
+}
 
-        const win = Math.random() < 0.5;
+// ================= COMMANDS =================
 
-        coins[id] = win
-            ? coins[id] + amount
-            : coins[id] - amount;
+client.on("messageCreate", async (message) => {
+    if (message.author.bot) return;
+    if (!message.guild) return;
+    if (!message.content.startsWith(PREFIX)) return;
 
-        return m.reply(win ? "🐮 HAI VINTO!" : "🐮 HAI PERSO!");
-    }
+    const args = message.content
+        .slice(PREFIX.length)
+        .trim()
+        .split(/\s+/);
+
+    const command = args.shift().toLowerCase();
 
     // ================= HELP =================
-    if (cmd === "help") {
-        return m.reply(`🐮 Moo Bot Help
-%funfact
-%work
-%gamble
-%leaderboard
-%ban %kick %timeout %untimeout
-🐮`);
+
+    if (command === "help") {
+        return message.reply(
+`🐮 **Moo Bot Help**
+
+%ban @user
+%kick @user
+%timeout @user 1m|1h|1d|1w
+
+🐮`
+        );
     }
 
-    // ================= MODERATION =================
-    async function mod(action, text, id, guild) {
-        const member = await guild.members.fetch(id);
+    // ================= BAN =================
 
-        const fact = pickFact();
+    if (command === "ban") {
+        if (
+            !message.member.permissions.has(
+                PermissionsBitField.Flags.BanMembers
+            )
+        ) {
+            return message.reply("Non hai permessi.");
+        }
 
-        return `${text}\n\n${fact}`;
+        const target = args[0];
+
+        if (!target) {
+            return message.reply("Uso: %ban @user");
+        }
+
+        const userId = target.replace(/[<@!>]/g, "");
+
+        try {
+            const member =
+                await message.guild.members.fetch(userId);
+
+            await message.guild.members.ban(userId);
+
+            return message.reply(
+`❗ Moo! Ho bannato ${member.user.tag} dal server! ❗
+
+${getModerationFact()}`
+            );
+        } catch (err) {
+            console.error(err);
+            return message.reply("Errore durante il ban.");
+        }
     }
 
-    if (cmd === "ban") {
-        if (!m.member.permissions.has(PermissionsBitField.Flags.BanMembers)) return;
-        const id = args[0]?.replace(/[<@!>]/g,"");
-        await m.guild.members.ban(id);
-        return m.reply(await mod("Ho bannato questa persona! moo!", id, m.guild));
+    // ================= KICK =================
+
+    if (command === "kick") {
+        if (
+            !message.member.permissions.has(
+                PermissionsBitField.Flags.KickMembers
+            )
+        ) {
+            return message.reply("Non hai permessi.");
+        }
+
+        const target = args[0];
+
+        if (!target) {
+            return message.reply("Uso: %kick @user");
+        }
+
+        const userId = target.replace(/[<@!>]/g, "");
+
+        try {
+            const member =
+                await message.guild.members.fetch(userId);
+
+            await member.kick();
+
+            return message.reply(
+`❗ Moo! Ho espulso ${member.user.tag} dal server! ❗
+
+${getModerationFact()}`
+            );
+        } catch (err) {
+            console.error(err);
+            return message.reply("Errore durante l'espulsione.");
+        }
     }
 
-    if (cmd === "kick") {
-        if (!m.member.permissions.has(PermissionsBitField.Flags.KickMembers)) return;
-        const id = args[0]?.replace(/[<@!>]/g,"");
-        const member = await m.guild.members.fetch(id);
-        await member.kick();
-        return m.reply(await mod("Ho espulso questa persona! moo!", id, m.guild));
-    }
+    // ================= TIMEOUT =================
 
-    if (cmd === "timeout") {
-        if (!m.member.permissions.has(PermissionsBitField.Flags.ModerateMembers)) return;
-        const id = args[0]?.replace(/[<@!>]/g,"");
-        const member = await m.guild.members.fetch(id);
-        await member.timeout(60 * 1000);
-        return m.reply(await mod("Ho timeoutato questa persona! moo!", id, m.guild));
+    if (command === "timeout") {
+        if (
+            !message.member.permissions.has(
+                PermissionsBitField.Flags.ModerateMembers
+            )
+        ) {
+            return message.reply("Non hai permessi.");
+        }
+
+        const target = args[0];
+        const duration = args[1];
+
+        if (!target || !duration) {
+            return message.reply(
+                "Uso: %timeout @user 1m|1h|1d|1w"
+            );
+        }
+
+        const ms = parseDuration(duration);
+
+        if (!ms) {
+            return message.reply(
+                "Durata non valida."
+            );
+        }
+
+        const userId = target.replace(/[<@!>]/g, "");
+
+        try {
+            const member =
+                await message.guild.members.fetch(userId);
+
+            await member.timeout(ms);
+
+            return message.reply(
+`❗ Moo! Ho messo in timeout ${member.user.tag}! ❗
+
+⏰ Durata: ${duration}
+
+${getModerationFact()}`
+            );
+        } catch (err) {
+            console.error(err);
+            return message.reply(
+                "Errore durante il timeout."
+            );
+        }
     }
 });
 
