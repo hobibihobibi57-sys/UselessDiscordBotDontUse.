@@ -1,7 +1,7 @@
 process.on("uncaughtException", console.error);
 process.on("unhandledRejection", console.error);
 
-const { Client, GatewayIntentBits } = require("discord.js");
+const { Client, GatewayIntentBits, PermissionsBitField } = require("discord.js");
 
 const client = new Client({
     intents: [
@@ -20,11 +20,13 @@ const coins = {};
 const cooldowns = {};
 const WORK_COOLDOWN = 15000;
 
-// ================= FUN FACTS (186 TOTAL) =================
+// ================= MAX TIMEOUT =================
+const MAX_TIMEOUT_MS = 365 * 24 * 60 * 60 * 1000;
 
+// ================= FUN FACTS (186 TOTAL) =================
 const funFacts = [
 
-/* ================= COMMON (100) ================= */
+/* ================= COMMON ================= */
 "Le mucche sono animali erbivori.",
 "Le mucche producono latte.",
 "Le mucche vivono in gruppo.",
@@ -113,7 +115,7 @@ const funFacts = [
 "Le mucche sono casearie.",
 "Le mucche sono allevate ovunque nel mondo.",
 
-/* ================= UNCOMMON (50) ================= */
+/* ================= UNCOMMON ================= */
 "Le mucche scelgono amici.",
 "Le mucche si stressano se isolate.",
 "Le mucche riconoscono volti umani.",
@@ -132,21 +134,18 @@ const funFacts = [
 "Le mucche imparano segnali.",
 "Le mucche riconoscono il branco.",
 "Le mucche sono addestrabili.",
-"Le mucche hanno comportamento sociale.",
 "Le mucche Wagyu sono pregiate.",
-"Le mucche Angus sono comuni.",
+"Le mucche Angus sono diffuse.",
 "Le mucche da latte producono più latte.",
 "Le mucche da carne sviluppano muscoli.",
 "Le mucche si adattano ai climi.",
 "Le mucche hanno memoria spaziale.",
 "Le mucche comunicano suoni.",
-"Le mucche riconoscono persone.",
 "Le mucche reagiscono ai cambiamenti.",
 "Le mucche mostrano individualità.",
 "Le mucche apprendono.",
 "Le mucche evitano pericoli.",
 "Le mucche sono guidate facilmente.",
-"Le mucche hanno cognizione moderata.",
 "Le mucche soffrono isolamento.",
 "Le mucche preferiscono routine.",
 "Le mucche si legano agli allevatori.",
@@ -164,7 +163,7 @@ const funFacts = [
 "Le mucche riconoscono ambienti.",
 "Le mucche sono intelligenti socialmente.",
 
-/* ================= RARE (25) ================= */
+/* ================= RARE ================= */
 "Le mucche sognano.",
 "Ogni mucca ha naso unico.",
 "Le mucche ricordano anni.",
@@ -214,51 +213,106 @@ const funFacts = [
 // ================= FUNCTIONS =================
 
 function pickFact() {
-    return "🐮 " + funFacts[Math.floor(Math.random() * funFacts.length)];
+    const f = funFacts[Math.floor(Math.random() * funFacts.length)];
+    return `🐮 ${f}`;
 }
 
 // ================= BOT =================
 
 client.once("ready", () => {
-    console.log(`🐮 Online: ${client.user.tag}`);
+    console.log(`🐮 Online ${client.user.tag}`);
 });
 
 client.on("messageCreate", async (m) => {
     if (!m.guild || m.author.bot) return;
     if (!m.content.startsWith(PREFIX)) return;
 
-    const args = m.content.slice(1).split(" ");
+    const args = m.content.slice(1).trim().split(/\s+/);
     const cmd = args.shift().toLowerCase();
 
+    // FUNFACT
     if (cmd === "funfact") return m.reply(pickFact());
 
+    // WORK
     if (cmd === "work") {
         coins[m.author.id] = (coins[m.author.id] || 0) + 50;
         return m.reply("🐮 +50 coins");
     }
 
+    // GAMBLE
     if (cmd === "gamble") {
         const amount = parseInt(args[0]);
-        if (!amount || amount <= 0) return m.reply("usa %gamble 50");
-        if ((coins[m.author.id] || 0) < amount) return m.reply("non hai coins");
+        if (!amount) return m.reply("use %gamble 50");
+        if ((coins[m.author.id] || 0) < amount) return m.reply("no coins");
 
         const win = Math.random() < 0.5;
-
         coins[m.author.id] = win
             ? coins[m.author.id] + amount
             : coins[m.author.id] - amount;
 
-        return m.reply(win ? "🐮 HAI VINTO!" : "🐮 HAI PERSO!");
+        return m.reply(win ? "🐮 WIN!" : "🐮 LOSE!");
     }
 
+    // LEADERBOARD
     if (cmd === "leaderboard") {
         return m.reply(
             Object.entries(coins)
                 .sort((a,b)=>b[1]-a[1])
                 .slice(0,10)
                 .map((x,i)=>`${i+1}. <@${x[0]}> - ${x[1]}`)
-                .join("\n") || "vuoto"
+                .join("\n") || "empty"
         );
+    }
+
+    // HELP
+    if (cmd === "help") {
+        return m.reply(`🐮
+%funfact
+%work
+%gamble
+%leaderboard
+%ban
+%kick
+%timeout
+%untimeout
+🐮`);
+    }
+
+    // BAN
+    if (cmd === "ban") {
+        if (!m.member.permissions.has(PermissionsBitField.Flags.BanMembers)) return;
+        const id = args[0]?.replace(/[<@!>]/g,"");
+        await m.guild.members.ban(id);
+        return m.reply("🐮 banned");
+    }
+
+    // KICK
+    if (cmd === "kick") {
+        if (!m.member.permissions.has(PermissionsBitField.Flags.KickMembers)) return;
+        const id = args[0]?.replace(/[<@!>]/g,"");
+        const member = await m.guild.members.fetch(id);
+        await member.kick();
+        return m.reply("🐮 kicked");
+    }
+
+    // TIMEOUT
+    if (cmd === "timeout") {
+        if (!m.member.permissions.has(PermissionsBitField.Flags.ModerateMembers)) return;
+        const id = args[0]?.replace(/[<@!>]/g,"");
+        const member = await m.guild.members.fetch(id);
+
+        let ms = 60 * 1000;
+        await member.timeout(ms);
+        return m.reply("🐮 timeout");
+    }
+
+    // UNTIMEOUT
+    if (cmd === "untimeout") {
+        if (!m.member.permissions.has(PermissionsBitField.Flags.ModerateMembers)) return;
+        const id = args[0]?.replace(/[<@!>]/g,"");
+        const member = await m.guild.members.fetch(id);
+        await member.timeout(null);
+        return m.reply("🐮 untimeout");
     }
 });
 
