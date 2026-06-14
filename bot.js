@@ -72,6 +72,34 @@ client.on("messageCreate", async (message) => {
     // ================= ECONOMY =================
     if (economy.handleCommand(message, command, args)) return;
 
+        // ================= HELP =================
+    if (command === "help") {
+        return message.reply(
+`🐮 **Capo Mucca Help**
+
+📚 Generale
+%help - mostra questo messaggio
+%funfact - mostra un fatto casuale
+
+💰 Economia
+%work - guadagna 50 Moo Coins
+%gamble <amount> - scommetti Moo Coins
+%give <amount> @user - dai Moo Coins
+%leaderboard - classifica Moo Coins
+
+🛡️ Moderazione
+%ban @user - banna un utente
+%kick @user - espelle un utente
+%timeout @user 1m|1h|1d|1w - timeout
+%untimeout @user - rimuove il timeout
+
+🧹 Pulizia
+%purge after <message id> - cancella tutti i messaggi dopo quel messaggio
+
+🐮 Moo!`
+        );
+    }
+    
     // ================= FUNFACT =================
     if (command === "funfact") {
         return message.reply(getFunFact());
