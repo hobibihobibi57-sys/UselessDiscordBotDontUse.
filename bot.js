@@ -89,6 +89,7 @@ if (await purge.handleCommand(message, command, args)) return;
 %flip - lancia una moneta
 
 💰 Economia
+%daily - ricompensa giornaliera (150-325 Moo Coins)
 %work - guadagna 50 Moo Coins
 %gamble <amount> - scommetti Moo Coins
 %give <amount> @user - dai Moo Coins
