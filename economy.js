@@ -114,6 +114,17 @@ function handleCommand(message, command, args) {
         return true;
     }
 
+        // ================= FLIP =================
+    if (command === "flip") {
+        const result = Math.random() < 0.5 ? "Testa" : "Croce";
+
+        message.reply(
+            `🪙 **Testa o Croce...?**\n\n${result}!`
+        );
+
+        return true;
+    }
+    
     // ================= LEADERBOARD =================
     if (command === "leaderboard") {
         const sorted = Object.entries(coins)
