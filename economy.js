@@ -124,6 +124,41 @@ function handleCommand(message, command, args) {
 
         return true;
     }
+
+    // ================= DAILY =================
+    if (command === "daily") {
+        if (
+            dailyCooldown[userId] &&
+            Date.now() - dailyCooldown[userId] < DAILY_COOLDOWN
+        ) {
+            const remaining =
+                DAILY_COOLDOWN - (Date.now() - dailyCooldown[userId]);
+
+            const hours = Math.floor(remaining / 3600000);
+            const minutes = Math.floor((remaining % 3600000) / 60000);
+
+            message.reply(
+                `🐮 Hai già riscattato il tuo daily!\n⏳ Torna tra ${hours}h ${minutes}m.`
+            );
+
+            return true;
+        }
+
+        dailyCooldown[userId] = Date.now();
+
+        const reward =
+            Math.floor(Math.random() * (325 - 150 + 1)) + 150;
+
+        coins[userId] = (coins[userId] || 0) + reward;
+
+        message.reply(
+            `🎁 **Daily Reward!**\n\n` +
+            `Hai ricevuto **${reward} Moo Coins!**\n` +
+            `💰 Saldo: ${coins[userId]}`
+        );
+
+        return true;
+    }
     
     // ================= LEADERBOARD =================
     if (command === "leaderboard") {
