@@ -1,9 +1,11 @@
 const coins = {};
 const workCooldown = {};
 const gambleCooldown = {};
-
+const dailyCooldown = {};
+    
 const WORK_COOLDOWN = 15000; // 15s
 const GAMBLE_COOLDOWN = 15000; // 15s
+const DAILY_COOLDOWN = 24 * 60 * 60 * 1000;
 
 function handleCommand(message, command, args) {
     const userId = message.author.id;
