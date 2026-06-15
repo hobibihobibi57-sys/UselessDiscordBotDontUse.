@@ -85,6 +85,9 @@ if (await purge.handleCommand(message, command, args)) return;
 %help - mostra questo messaggio
 %funfact - mostra un fatto casuale
 
+🪙 Giochi
+%flip - lancia una moneta
+
 💰 Economia
 %work - guadagna 50 Moo Coins
 %gamble <amount> - scommetti Moo Coins
